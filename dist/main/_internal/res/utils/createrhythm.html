@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Rhythm creator</title>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+</head>
+<body>
+
+<label for="rhythm">Добавьте песню!</label>
+<br>
+<input type="file" id="rhythm">
+<br>
+<br>
+<button style="padding: 30px" class="tact">Такт!</button>
+<button style="padding: 30px" class="danger">Опасность!</button>
+<br>
+<br>
+<label for="speed">Скорость стрелочек: (default = 150)</label>
+<br>
+<input type="number" step="any" class="speed" id="speed" value="150">
+<br>
+<label for="fade">Время на опасную зону: (default = 2)</label>
+<br>
+<input type="number" step="any" class="fade" id="fade" value="2">
+<p>Отсчет через: <span class="time"></span></p>
+<label for="arrows">Код стрелочек</label>
+<textarea id="arrows" cols="30" rows="10">arrow_codes = [</textarea>
+<label for="zones">Код опасных зон</label>
+<textarea id="zones" cols="30" rows="10">danger_codes = [</textarea>
+
+<script>
+    let arrowTimer = 0
+
+    $('#rhythm').on('change', async e => {
+        let ctx = new AudioContext()
+        let buffer = null
+        let file =  $('#rhythm').prop('files')[0]
+
+        let data = await file.arrayBuffer()
+
+        await ctx.decodeAudioData(data, d => {
+            buffer = d
+
+            let time = 5
+            let timer = setInterval(() => {
+                time -= 1
+                $('.time').text(time)
+                if (time === 0) {
+                    clearInterval(timer)
+
+                    let source = ctx.createBufferSource()
+                    source.buffer = buffer
+                    source.connect(ctx.destination)
+                    source.start()
+                    setInterval(() => arrowTimer += 0.01, 10)
+                }
+            }, 1000)
+        })
+    })
+
+
+    $('.tact').on('click', () => {
+        $('#arrows').html(
+            $('#arrows').html() + `[${arrowTimer.toFixed(2)}, ${$('.speed').val()}, "l"], &#13;&#10;`
+        )
+    })
+
+    $('.danger').on('click', () => {
+        $('#zones').html(
+            $('#zones').html() + `[0, 0, ${$('.fade').val()}, ${arrowTimer.toFixed(2) - $('.fade').val()}], &#13;&#10;`
+        )
+    })
+
+</script>
+</body>
+</html>
